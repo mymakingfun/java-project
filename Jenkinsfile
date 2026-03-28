@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage ('Checkout') {
             steps {
-                check scm
+                checkout scm
                 script {
                     GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 }
