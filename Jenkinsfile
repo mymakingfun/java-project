@@ -14,9 +14,14 @@ pipeline {
     stages {
         stage ('Checkout') {
             steps {
-                checkout scm
                 script {
-                    env.COMMIT_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    def scmVars = checkout scm
+                    env.COMMIT_SHA = (scmVars?.GIT_COMMIT ?: env.GIT_COMMIT ?: '').trim()
+
+                    if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
+                        env.COMMIT_SHA = sh(script: 'git rev-parse HEAD || true', returnStdout: true).trim()
+                    }
+
                     echo "Resolved commit sha: ${env.COMMIT_SHA}"
                 }
             }
@@ -45,6 +50,14 @@ pipeline {
     post {
         always {
             script {
+                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
+                    env.COMMIT_SHA = (env.GIT_COMMIT ?: '').trim()
+                }
+
+                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
+                    env.COMMIT_SHA = sh(script: 'git rev-parse HEAD || true', returnStdout: true).trim()
+                }
+
                 if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
                     echo "Skip githubNotify(FINAL): invalid COMMIT_SHA='${env.COMMIT_SHA}'"
                     return
