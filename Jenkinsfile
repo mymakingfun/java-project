@@ -14,7 +14,7 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 }
             }
 
