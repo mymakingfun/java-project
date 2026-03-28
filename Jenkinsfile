@@ -7,6 +7,8 @@ pipeline {
     }
     environment {
         PROJECT_NAME = 'java-project'
+        GITHUB_ACCOUNT = 'mymakingfun'
+        GITHUB_REPO = 'java-project'
         GIT_COMMIT = ''
     }
     stages {
@@ -26,7 +28,8 @@ pipeline {
                         description: "Building...", 
                         status: 'PENDING',
                         credentialsId: 'github-https',
-                        repo: 'mymakingfun/java-project',
+                        account: env.GITHUB_ACCOUNT,
+                        repo: env.GITHUB_REPO,
                         sha: env.GIT_COMMIT
                 }
 
@@ -37,6 +40,11 @@ pipeline {
     post {
         always {
             script {
+                if (!env.GIT_COMMIT?.trim()) {
+                    echo 'Skip githubNotify: env.GIT_COMMIT is empty.'
+                    return
+                }
+
                 def githubStatus = 'SUCCESS'
                 if (currentBuild.currentResult == 'FAILURE') {
                     githubStatus = 'FAILURE'
@@ -49,7 +57,8 @@ pipeline {
                         description: "Build finished", 
                         status: githubStatus,
                         credentialsId: 'github-https',
-                        repo: 'mymakingfun/java-project',
+                        account: env.GITHUB_ACCOUNT,
+                        repo: env.GITHUB_REPO,
                         sha: env.GIT_COMMIT
             }
         }
