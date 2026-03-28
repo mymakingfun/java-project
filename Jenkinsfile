@@ -7,13 +7,29 @@ pipeline {
     }
     environment {
         PROJECT_NAME = 'java-project'
+        GIT_COMMIT = ''
     }
     stages {
-        stage ('hello') {
+        stage ('Checkout') {
+            steps {
+                check scm
+                script {
+                    GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                }
+            }
+
+        }
+        stage ('Build') {
             steps {
                 script {
-                    githubNotify context: 'Jenkins CI', description: "Building...", status: 'PENDING'
+                    githubNotify context: 'Jenkins CI', 
+                        description: "Building...", 
+                        status: 'PENDING',
+                        credentialsId: 'github-https',
+                        repo: 'mymakingfun/java-project',
+                        sha: env.GIT_COMMIT
                 }
+
                 echo "Hello, ${PROJECT_NAME}!"
             }       
         }
@@ -29,7 +45,12 @@ pipeline {
                 } else if (currentBuild.currentResult == 'ABORTED') {
                     githubStatus = 'ERROR'
                 }
-                githubNotify context: 'Jenkins CI', status: githubStatus, description: "Build finished"
+                githubNotify context: 'Jenkins CI', 
+                        description: "Build finished", 
+                        status: githubStatus,
+                        credentialsId: 'github-https',
+                        repo: 'mymakingfun/java-project',
+                        sha: env.GIT_COMMIT
             }
         }
     }
