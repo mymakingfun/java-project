@@ -15,8 +15,7 @@ pipeline {
                     githubNotify context: 'Jenkins CI', description: "Building...", status: 'PENDING'
                 }
                 echo "Hello, ${PROJECT_NAME}!"
-            }
-                
+            }       
         }
     }
     post {
