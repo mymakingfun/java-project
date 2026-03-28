@@ -9,14 +9,15 @@ pipeline {
         PROJECT_NAME = 'java-project'
         GITHUB_ACCOUNT = 'mymakingfun'
         GITHUB_REPO = 'java-project'
-        GIT_COMMIT = ''
+        COMMIT_SHA = ''
     }
     stages {
         stage ('Checkout') {
             steps {
                 checkout scm
                 script {
-                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.COMMIT_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    echo "Resolved commit sha: ${env.COMMIT_SHA}"
                 }
             }
 
@@ -24,13 +25,17 @@ pipeline {
         stage ('Build') {
             steps {
                 script {
-                    githubNotify context: 'Jenkins CI', 
-                        description: "Building...", 
-                        status: 'PENDING',
-                        credentialsId: 'github-https',
-                        account: env.GITHUB_ACCOUNT,
-                        repo: env.GITHUB_REPO,
-                        sha: env.GIT_COMMIT
+                    if (env.COMMIT_SHA ==~ /[0-9a-f]{40}/) {
+                        githubNotify context: 'Jenkins CI',
+                            description: "Building...",
+                            status: 'PENDING',
+                            credentialsId: 'github-https',
+                            account: env.GITHUB_ACCOUNT,
+                            repo: env.GITHUB_REPO,
+                            sha: env.COMMIT_SHA
+                    } else {
+                        echo "Skip githubNotify(PENDING): invalid COMMIT_SHA='${env.COMMIT_SHA}'"
+                    }
                 }
 
                 echo "Hello, ${PROJECT_NAME}!"
@@ -40,8 +45,8 @@ pipeline {
     post {
         always {
             script {
-                if (!env.GIT_COMMIT?.trim()) {
-                    echo 'Skip githubNotify: env.GIT_COMMIT is empty.'
+                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
+                    echo "Skip githubNotify(FINAL): invalid COMMIT_SHA='${env.COMMIT_SHA}'"
                     return
                 }
 
@@ -59,7 +64,7 @@ pipeline {
                         credentialsId: 'github-https',
                         account: env.GITHUB_ACCOUNT,
                         repo: env.GITHUB_REPO,
-                        sha: env.GIT_COMMIT
+                        sha: env.COMMIT_SHA
             }
         }
     }
