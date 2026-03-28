@@ -9,7 +9,7 @@ pipeline {
         PROJECT_NAME = 'java-project'
     }
     stages {
-        stage {
+        stage ('hello') {
             steps {
                 echo "Hello, ${PROJECT_NAME}!"
             }
