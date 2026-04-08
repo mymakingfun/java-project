@@ -1,83 +1,37 @@
 pipeline {
     agent {
-        docker {
-            image 'maven:3.9.14-eclipse-temurin-25'
-            args '-u 111:113 -v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
-        }
-    }
-    environment {
-        PROJECT_NAME = 'java-project'
-        GITHUB_ACCOUNT = 'mymakingfun'
-        GITHUB_REPO = 'java-project'
-        COMMIT_SHA = ''
+        label 'inbound-agent'
     }
     stages {
-        stage ('Checkout') {
+        stage('Main分支判断') {
             steps {
                 script {
-                    def scmVars = checkout scm
-                    env.COMMIT_SHA = (scmVars?.GIT_COMMIT ?: env.GIT_COMMIT ?: '').trim()
-
-                    if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
-                        env.COMMIT_SHA = sh(script: 'git rev-parse HEAD || true', returnStdout: true).trim()
-                    }
-
-                    echo "Resolved commit sha: ${env.COMMIT_SHA}"
-                }
-            }
-
-        }
-        stage ('Build') {
-            steps {
-                script {
-                    if (env.COMMIT_SHA ==~ /[0-9a-f]{40}/) {
-                        githubNotify context: 'Jenkins CI',
-                            description: "Building...",
-                            status: 'PENDING',
-                            credentialsId: 'github-https',
-                            account: env.GITHUB_ACCOUNT,
-                            repo: env.GITHUB_REPO,
-                            sha: env.COMMIT_SHA
+                    if (env.BRANCH_NAME == 'main') {
+                        echo '当前为 main 分支，执行 main 分支专属流程'
+                        // main分支专属逻辑
+                        sh "mvn clean package"
+                        
                     } else {
-                        echo "Skip githubNotify(PENDING): invalid COMMIT_SHA='${env.COMMIT_SHA}'"
+                        // pull request 或 其他分支都需要自动加SNAPSHOT
+                        echo "当前为Pull Request或其他分支：${env.BRANCH_NAME}，自动处理版本为SNAPSHOT"
+                        def currentVersion = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
+                        echo "当前pom版本: ${currentVersion}"
+                        def newVersion = currentVersion.endsWith('-SNAPSHOT') ? currentVersion : currentVersion + '-SNAPSHOT'
+                        echo "新版本: ${newVersion}"
+                        sh "mvn versions:set -DnewVersion=${newVersion} -DgenerateBackupPoms=false"
+
+                        sh "mvn clean package"
+                        if (env.CHANGE_ID) {
+                            echo 'Pull Request流程'
+                            
+                        } else {
+                            echo '其他分支流程'
+                            
+                        }
+                        
                     }
+                    
                 }
-
-                echo "Hello, ${PROJECT_NAME}!"
-            }       
-        }
-    }
-    post {
-        always {
-            script {
-                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
-                    env.COMMIT_SHA = (env.GIT_COMMIT ?: '').trim()
-                }
-
-                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
-                    env.COMMIT_SHA = sh(script: 'git rev-parse HEAD || true', returnStdout: true).trim()
-                }
-
-                if (!(env.COMMIT_SHA ==~ /[0-9a-f]{40}/)) {
-                    echo "Skip githubNotify(FINAL): invalid COMMIT_SHA='${env.COMMIT_SHA}'"
-                    return
-                }
-
-                def githubStatus = 'SUCCESS'
-                if (currentBuild.currentResult == 'FAILURE') {
-                    githubStatus = 'FAILURE'
-                } else if (currentBuild.currentResult == 'UNSTABLE') {
-                    githubStatus = 'ERROR'
-                } else if (currentBuild.currentResult == 'ABORTED') {
-                    githubStatus = 'ERROR'
-                }
-                githubNotify context: 'Jenkins CI', 
-                        description: "Build finished", 
-                        status: githubStatus,
-                        credentialsId: 'github-https',
-                        account: env.GITHUB_ACCOUNT,
-                        repo: env.GITHUB_REPO,
-                        sha: env.COMMIT_SHA
             }
         }
     }
