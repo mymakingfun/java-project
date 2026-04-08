@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>mymakingfun</groupId>
 	<artifactId>javap</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<packaging>jar</packaging>
 	<name />
 	<description />
@@ -55,6 +55,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -75,6 +76,40 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.21.0</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-help-plugin</artifactId>
+				<version>3.5.1</version>
+			</plugin>
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<version>4.9.10</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<includeOnlyProperties>
+						<includeOnlyProperty>git.branch</includeOnlyProperty>
+						<includeOnlyProperty>git.commit.id</includeOnlyProperty>
+						<includeOnlyProperty>git.commit.id.abbrev</includeOnlyProperty>
+						<includeOnlyProperty>git.commit.user.email</includeOnlyProperty>
+						<includeOnlyProperty>git.commit.time</includeOnlyProperty>
+						<includeOnlyProperty>git.build.user.email</includeOnlyProperty>
+						<includeOnlyProperty>git.build.time</includeOnlyProperty>
+					</includeOnlyProperties>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -109,5 +144,16 @@
 			</plugin>
 		</plugins>
 	</build>
-
+	<distributionManagement>
+		<repository>
+			<id>maven-releases</id>
+			<name>Nexus Releases</name>
+			<url>http://192.168.183.100:8081/repository/maven-releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>maven-snapshots</id>
+			<name>Nexus Snapshots</name>
+			<url>http://192.168.183.100:8081/repository/maven-snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
